@@ -7,9 +7,17 @@ app.get('/', function(req, res){
 });
 
 io.on('connection', function(socket){
-  socket.on('chat message', function(msg){
-    io.emit('chat message', msg);
-  });
+
+	var uId = socket.id.toString().substr(0,5);
+	io.emit('user connected', uId);
+	socket.on('chat message', function(msg){
+		io.emit('chat message', uId + ' : ' + msg);
+    });
+	socket.on('disconnect', function(){
+		console.log(uId + ' disconnected');
+		socket.broadcast.emit('user disconnected', uId);
+		io.sockets.emit('user disconnected', uId);
+	});
 });
 
 http.listen(3000, function(){
