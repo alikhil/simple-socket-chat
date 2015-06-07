@@ -4,7 +4,7 @@ var io = require('socket.io')(http);
 var port = 3000;
 
 app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
+	res.sendFile(__dirname + '/index.html');
 });
 
 io.on('connection', function(socket){
@@ -12,7 +12,7 @@ io.on('connection', function(socket){
 	var uId = socket.id.toString().substr(0,5);
 	io.emit('user.connect', { user : uId });
 	socket.on('chat.msg', function(msg){
-		io.emit('chat.msg', { user : uId, message : {message: msg} });
+		io.emit('chat.msg', { user : uId, message : msg.message });
     });
 	socket.on('disconnect', function(){
 		io.emit('user.disconnect', { user : uId });
@@ -20,5 +20,5 @@ io.on('connection', function(socket){
 });
 
 http.listen(port, function(){
-  console.log('listening on *:' + port);
+	console.log('listening on *:' + port);
 });
