@@ -8,9 +8,14 @@
 		<script>
 $(document).ready(function () {
 	var socket = io();
-	$('form').submit(function() {
-		socket.emit('chat.msg', {message: $('#m').val()});
-		$('#m').val('');
+	$('#message_form').submit(function() {
+		socket.emit('chat.msg', {
+			message: $('#message_text').val(), 
+			user: $('#name_text').val()});
+		$('#message_text').val('');
+		return false;
+	});
+	$('#name_form').submit(function() {
 		return false;
 	});
 	socket.on('chat.msg', function(msg) {
@@ -26,9 +31,12 @@ $(document).ready(function () {
 		</script>
 	</head>
 	<body>
+		<form id='name_form' action=''>
+			<input id='name_text' autocomplete='off' />
+		</form>
 		<ul id='messages'></ul>
-		<form action=''>
-			<input id='m' autocomplete='off' /><button>Send</button>
+		<form id='message_form' action=''>
+			<input id='message_text' autocomplete='off' /><button>Send</button>
 		</form>
 	</body>
 </html>
