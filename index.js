@@ -4,21 +4,31 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var port = 3000;
 
+var userIdNames = { };
+ 
 app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
 });
-// GET /style.css etc
+
  app.use(express.static(__dirname + '/public'));
 
 io.on('connection', function(socket){
 
 	var uId = socket.id.toString().substr(0,5);
-	io.emit('user.connect', { user : uId });
+	
+	socket.on('user.register', function(user){
+		userIdNames[uId] = user.user;
+		io.emit('user.connect', { user : user.user });
+	});
+	
 	socket.on('chat.msg', function(msg){
-		io.emit('chat.msg', { user : uId, message : msg.message });
+		userIdNames[msg.uId] = msg.user;
+		io.emit('chat.msg', { user : msg.user, message : msg.message });
     });
 	socket.on('disconnect', function(){
-		io.emit('user.disconnect', { user : uId });
+		io.emit('user.disconnect', { user : userIdNames[uId] });
+		if(userIdNames.hasOwnProperty(uId))
+			delete(userIdNames[uId]);
 	});
 });
 
