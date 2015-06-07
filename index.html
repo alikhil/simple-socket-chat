@@ -3,32 +3,32 @@
 	<head>
 		<title>Socket.IO chat</title>
 		<link rel='stylesheet' type='text/css' href='app.css' />
-		<script src="/socket.io/socket.io.js"></script>
-		<script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+		<script src='/socket.io/socket.io.js'></script>
+		<script src='http://code.jquery.com/jquery-1.11.1.js'></script>
 		<script>
 $(document).ready(function () {
 	var socket = io();
-	$("form").submit(function() {
-		socket.emit("chat.msg", {message: $("#m").val()});
-		$("#m").val("");
+	$('form').submit(function() {
+		socket.emit('chat.msg', {message: $('#m').val()});
+		$('#m').val('');
 		return false;
 	});
-	socket.on("chat.msg", function(msg) {
-		$("#messages").append($("<li>").text("[" + msg.user + "] : " + msg.message));
+	socket.on('chat.msg', function(msg) {
+		$('#messages').append($('<li>').text('[' + msg.user + '] : ' + msg.message));
 	});
-	socket.on("user.disconnect", function(msg) {
-		$("#messages").append($("<li>").text("[" + msg.user + "] left the chat"));
+	socket.on('user.disconnect', function(msg) {
+		$('#messages').append($('<li>').text('[' + msg.user + '] left the chat'));
 	});
-	socket.on("user.connect", function(msg) {
-		$("#messages").append($("<li>").text("[" + msg.user + "] joined the chat"));
+	socket.on('user.connect', function(msg) {
+		$('#messages').append($('<li>').text('[' + msg.user + '] joined the chat'));
 	});
 });
 		</script>
 	</head>
 	<body>
-		<ul id="messages"></ul>
-		<form action="">
-			<input id="m" autocomplete="off" /><button>Send</button>
+		<ul id='messages'></ul>
+		<form action=''>
+			<input id='m' autocomplete='off' /><button>Send</button>
 		</form>
 	</body>
 </html>
