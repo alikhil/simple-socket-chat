@@ -9,12 +9,13 @@ app.get('/', function(req, res){
 io.on('connection', function(socket){
 
 	var uId = socket.id.toString().substr(0,5);
-	io.emit('user connected', uId);
-	socket.on('chat message', function(msg){
-		io.emit('chat message', uId + ' : ' + msg);
+	io.emit('user.connect', uId);
+	socket.on('chat.msg', function(msg){
+		var message = {user : uId, message : msg} ;
+		io.emit('chat.msg', JSON.strigify(message));
     });
-	socket.on('disconnect', function(){
-		io.emit('user disconnected', uId);
+	socket.on('user.disconnect', function(){
+		io.emit('user.disconnect', uId);
 	});
 });
 
