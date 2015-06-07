@@ -12,7 +12,7 @@ io.on('connection', function(socket){
 	var uId = socket.id.toString().substr(0,5);
 	io.emit('user.connect', { user : uId });
 	socket.on('chat.msg', function(msg){
-		io.emit('chat.msg', { user : uId, message : msg });
+		io.emit('chat.msg', { user : uId, message : {message: msg} });
     });
 	socket.on('disconnect', function(){
 		io.emit('user.disconnect', { user : uId });
