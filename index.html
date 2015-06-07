@@ -8,6 +8,12 @@
 		<script>
 $(document).ready(function () {
 	var socket = io();
+	var userName = prompt("Please enter your name", "Anonymous");
+	userName = (userName != null)? userName : "Anonymous";
+	$('#name_text').val(userName);
+	socket.on('connect', function () {
+		socket.emit("user.register", {user: userName});
+	});
 	$('#message_form').submit(function() {
 		socket.emit('chat.msg', {
 			message: $('#message_text').val(), 
