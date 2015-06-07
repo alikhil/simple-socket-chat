@@ -1,4 +1,5 @@
 var app = require('express')();
+var express = require("express");
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var port = 3000;
@@ -6,6 +7,8 @@ var port = 3000;
 app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
 });
+// GET /style.css etc
+ app.use(express.static(__dirname + '/public'));
 
 io.on('connection', function(socket){
 
