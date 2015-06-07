@@ -1,6 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var port = 3000;
 
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
@@ -9,16 +10,15 @@ app.get('/', function(req, res){
 io.on('connection', function(socket){
 
 	var uId = socket.id.toString().substr(0,5);
-	io.emit('user.connect', uId);
+	io.emit('user.connect', JSON.strigify({ user : uId });
 	socket.on('chat.msg', function(msg){
-		var message = {user : uId, message : msg} ;
-		io.emit('chat.msg', JSON.strigify(message));
+		io.emit('chat.msg', JSON.strigify({ user : uId, message : msg } ));
     });
 	socket.on('user.disconnect', function(){
-		io.emit('user.disconnect', uId);
+		io.emit('user.disconnect', JSON.strigify({ user : uId });
 	});
 });
 
-http.listen(3000, function(){
-  console.log('listening on *:3000');
+http.listen(port, function(){
+  console.log('listening on *:' + port);
 });
