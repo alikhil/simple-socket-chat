@@ -18,7 +18,7 @@ $(document).ready(function () {
 		defaultUserName: 'Anonymous', 
 		typingUsers: [],
 		updateTypingUsersTimerId: undefined,
-		updateTypingUsersTimerMs: 3000,
+		updateTypingUsersTimerMs: 200,
 		onlineUserCount: 0,
 		onlineUsers: [],
 		initUI: function () {
@@ -57,6 +57,14 @@ $(document).ready(function () {
 		bindSocketEvents: function () {
 			socket.on("chat.msg", function(msg) {
 				$("#messageList").append($("<li>").text("[" + msg.user + "] : " + msg.message));
+				var index;
+				for(index = 0; index < app.typingUsers.length; index ++) {
+					if(app.typingUsers[index].user == msg.user) {
+						app.typingUsers[index].time += 2*app.updateTypingUsersTimerMs;
+						app.updateTypingUsers();
+						break;
+					}
+				}
 			});
 			socket.on("user.disconnect", function(msg) {
 				$("#messageList").append($("<li>").text("[" + msg.user + "] left the chat"));
@@ -74,6 +82,7 @@ $(document).ready(function () {
 				}
 				if(index >= app.typingUsers.length) {
 					app.typingUsers.push({user: msg.user, time: currentTime});
+					app.updateTypingUsers();
 				}
 			});
 		},
@@ -116,7 +125,8 @@ $(document).ready(function () {
 		updateTypingUsers: function () {
 			var currentTime = (new Date()).getTime(), newList = [], nameList = [];
 			for(var index = 0; index < app.typingUsers.length; index ++) {
-				if(currentTime - app.typingUsers[index].time <= app.updateTypingUsersTimerMs) {
+				if(currentTime - app.typingUsers[index].time >= 0 &&
+					currentTime - app.typingUsers[index].time <= app.updateTypingUsersTimerMs) {
 					newList.push(app.typingUsers[index]);
 					nameList.push(app.typingUsers[index].user);
 				}
@@ -245,7 +255,7 @@ $(document).ready(function () {
 							<div class='col-sm-3'>
 							</div>
 							<div class='col-sm-2' style='padding: 0px;'>
-								<button type="button" id='leaveChatButton' class='btn btn-default'>Rename</button>
+								<button type="button" id='leaveChatButton' class='btn btn-default'>Leave chat</button>
 							</div>
 							<div class='col-sm-2' style='padding: 0px;'>
 								<button type="button" id='showOnlineUsersButton' class='btn btn-default'>
@@ -270,7 +280,7 @@ $(document).ready(function () {
 					</form>
 					<div id='userTypingNames'></div>
 				</div>
-				<div class='panel-body' id='contentuo'>
+				<div class='panel-body'>
 					<ul id='messageList'></ul>
 				</div>
 			</div>
