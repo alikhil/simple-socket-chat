@@ -19,11 +19,10 @@ $(document).ready(function () {
 		typingUsers: [],
 		updateTypingUsersTimerId: undefined,
 		updateTypingUsersTimerMs: 200,
-		onlineUserCount: 0,
 		onlineUsers: [],
 		initUI: function () {
 			$('#userNameTextInput').val(app.defaultUserName);
-			$('#showOnlineUsersCountLabel').text(app.onlineUserCount);
+			//app.updateOnlineUsers();
 			app.showMenuView();
 			$('#menuForm').submit(function () {
 				app.userName = $('#userNameTextInput').val();
@@ -33,6 +32,7 @@ $(document).ready(function () {
 				$('#userNameTextLabel').text(app.userName);
 				app.hideMenuView();
 				socket.emit('user.register', {user: app.userName});
+				socket.emit("users.getOnline");
 				return false;
 			});
 			$('#messageTextInput').on('input', function () {
@@ -69,19 +69,45 @@ $(document).ready(function () {
 					}
 				}
 			});
+			socket.on("users.online", function(msg) {
+				var newList = [];
+				for(var index = 0; index < msg.users.length; index ++) {
+					newList.push(msg.users[index].user);
+				}
+				app.onlineUsers.splice(0, app.onlineUsers.length);
+				app.onlineUsers = newList;
+				app.updateOnlineUsers();
+			});
 			socket.on("user.disconnect", function(msg) {
+				for(var index = 0; index < app.onlineUsers.length; index ++) {
+					if(app.onlineUsers[index] == msg.user) {
+						app.onlineUsers.splice(index, 1);
+						break;
+					}
+				}
 				$("#messageList").append(
 					$("<li>")
 						.addClass("alert-danger")
 						.text("[" + msg.user + "] left the chat")
 					);
+				app.updateOnlineUsers();
 			});
 			socket.on("user.connect", function(msg) {
+				var index;
+				for(index = 0; index < app.onlineUsers.length; index ++) {
+					if(app.onlineUsers[index].user == msg.user) {
+						break;
+					}
+				}
+				if(index >= app.onlineUsers.length) {
+					app.onlineUsers.push(msg.user);
+				}
 				$("#messageList").append(
 					$("<li>")
 						.addClass("alert-success")
 						.text("[" + msg.user + "] joined the chat")
 					);
+				app.updateOnlineUsers();
 			});
 			socket.on("user.types", function(msg) {
 				var index, currentTime = (new Date()).getTime();
@@ -152,6 +178,17 @@ $(document).ready(function () {
 				$('#userTypingNames').text("");
 			}
 			fixedElements.resizePadding();
+		},
+		updateOnlineUsers: function () {
+			var listElement = $("#onlineUserList");
+			listElement.empty();
+			for(var index = 0; index < app.onlineUsers.length; index ++) {
+				listElement.append(
+					$("<li>")
+						.text(app.onlineUsers[index])
+					);
+			}
+			$('#showOnlineUsersCountLabel').text(app.onlineUsers.length);
 		}
 	};
 	var fixedElements = {
@@ -168,7 +205,7 @@ $(document).ready(function () {
 	</head>
 	<body>
 		<!-- menu modal begin -->
-		<div class='modal' id='menuModal' role='dialog'>
+		<div class='modal' id='menuModal' role='dialog' data-backdrop="static" >
 			<div class='modal-dialog modal-sm'>
 				<div class='modal-content panel-primary'>
 					<div class='modal-header panel-heading'>
@@ -192,7 +229,7 @@ $(document).ready(function () {
 		<!-- menu modal end -->
 		
 		<!-- online modal begin -->
-		<div class='modal' id='onlineModal' role='dialog'>
+		<div class='modal' id='onlineModal' role='dialog' data-backdrop="static" >
 			<div class='modal-dialog modal-sm'>
 				<div class='modal-content panel-primary'>
 					<div class='modal-header panel-heading'>
