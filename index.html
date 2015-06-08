@@ -1,48 +1,225 @@
 <!doctype html>
 <html>
 	<head>
+		<meta charset='utf-8'>
+		<meta name='viewport' content='width=device-width, initial-scale=1'>
+		<link rel='stylesheet' href='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css'>
+		<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js'></script>
+		<script src='http://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js'></script>
+		
 		<title>Socket.IO chat</title>
 		<link rel='stylesheet' type='text/css' href='app.css' />
 		<script src='/socket.io/socket.io.js'></script>
-		<script src='http://code.jquery.com/jquery-1.11.1.js'></script>
 		<script>
 $(document).ready(function () {
 	var socket = io();
-	var userName = prompt("Please enter your name", "Anonymous");
-	userName = (userName != null)? userName : "Anonymous";
-	$('#name_text').val(userName);
-	socket.on('connect', function () {
-		socket.emit("user.register", {user: userName});
-	});
-	$('#message_form').submit(function() {
-		socket.emit('chat.msg', {
-			message: $('#message_text').val(), 
-			user: $('#name_text').val()});
-		$('#message_text').val('');
-		return false;
-	});
-	$('#name_form').submit(function() {
-		return false;
-	});
-	socket.on('chat.msg', function(msg) {
-		$('#messages').append($('<li>').text('[' + msg.user + '] : ' + msg.message));
-	});
-	socket.on('user.disconnect', function(msg) {
-		$('#messages').append($('<li>').text('[' + msg.user + '] left the chat'));
-	});
-	socket.on('user.connect', function(msg) {
-		$('#messages').append($('<li>').text('[' + msg.user + '] joined the chat'));
-	});
+	var app = {
+		userName: '',
+		defaultUserName: 'Anonymous', 
+		onlineUserCount: 0,
+		onlineUsers: [],
+		initUI: function () {
+			$('#userNameTextInput').val(app.defaultUserName);
+			$('#showOnlineUsersCountLabel').text(app.onlineUserCount);
+			app.showMenuView();
+			$('#menuForm').submit(function () {
+				app.userName = $('#userNameTextInput').val();
+				if(app.userName.length == 0) {
+					app.userName = app.defaultUserName;
+				}
+				$('#userNameTextLabel').text(app.userName);
+				socket.emit('user.register', {user: app.userName});
+				app.hideMenuView();
+				return false;
+			});
+			$('#messageForm').submit(function () {
+				var message = $('#messageTextInput').val();
+				$('#messageTextInput').val('');
+				$('#messageList').append($('<li>').text('[' + app.userName + '] : ' + message));
+				socket.emit("chat.msg", {message: message, user: app.userName});
+				return false;
+			});
+			$('#showOnlineUsersButton').click(function () {
+				app.showOnlineView();
+			});
+			$('#leaveChatButton').click(function () {
+				app.showMenuView();
+			});
+			fixedHeaders.init();
+		},
+		bindSocketEvents: function () {
+			socket.on("chat.msg", function(msg) {
+				$("#messageList").append($("<li>").text("[" + msg.user + "] : " + msg.message));
+			});
+			socket.on("user.disconnect", function(msg) {
+				$("#messageList").append($("<li>").text("[" + msg.user + "] left the chat"));
+			});
+			socket.on("user.connect", function(msg) {
+				$("#messageList").append($("<li>").text("[" + msg.user + "] joined the chat"));
+			});
+		},
+		init: function () {
+			app.initUI();
+			app.bindSocketEvents();
+		},
+		showMenuView: function () {
+			$('#menuModal').modal('show');
+			$('#userNameTextInput').focus();
+		},
+		hideMenuView: function () {
+			$('#menuModal').modal('hide');
+			$('#messageTextInput').focus();
+		},
+		showOnlineView: function () {
+			$('#onlineModal').modal('show');
+		},
+		hideOnlineView: function () {
+			$('#onlineModal').modal('hide');
+			$('#messageTextInput').focus();
+		}
+	};
+	var fixedHeaders = {
+		UpdatePanelHeaders: function () {
+			$(".fixedHeaders_panel").each(function() {
+				var el = $(this),
+					offset = el.offset(),
+					scrollTop = $(window).scrollTop(),
+					floatingHeader = $(".panel-heading", this);
+
+				if ((scrollTop > offset.top) && 
+					(scrollTop < offset.top + (el.height() - floatingHeader.outerHeight(false)))) {
+					$(".fixedHeaders_absoluteHeader", this).css("display", "");
+					floatingHeader
+						.css("width", floatingHeader.outerWidth(false))
+						.css("height", floatingHeader.outerHeight(false))
+						.addClass("fixedHeaders_floatingHeader");
+				} else if (scrollTop  > (offset.top + el.height()) &&
+					scrollTop < offset.top + el.height() + floatingHeader.outerHeight(false)) {
+					$(".fixedHeaders_absoluteHeader", this).css("display", "");
+					floatingHeader.addClass("fixedHeaders_floatingHeader");
+					floatingHeader.css({
+						"top": (floatingHeader.outerHeight(true)-el.height()-offset.top+scrollTop)
+					});
+				} else {
+					$(".fixedHeaders_absoluteHeader", this).css("display", "none");
+					floatingHeader
+						.css("width", "")
+						.css("height", "")
+						.removeClass("fixedHeaders_floatingHeader");
+				}
+			});
+		},
+		init: function () {
+			$(".fixedHeaders_panel").each(function() {
+				var floatingHeader = $(".panel-heading", this);
+				floatingHeader.before($("<div>")
+					.addClass("fixedHeaders_absoluteHeader")
+					.css("width", floatingHeader.outerWidth(false))
+					.css("height", floatingHeader.outerHeight(false))
+					)
+			});
+			$(window)
+				.scroll(fixedHeaders.UpdatePanelHeaders)
+				.trigger("scroll");
+		}, 
+		uninit: function () {
+			$(".fixedHeaders_absoluteHeader", this).remove();
+		}
+	};
+	app.init();
 });
 		</script>
+		<style>
+.fixedHeaders_floatingHeader {
+	position: fixed;
+	top: 0px;
+	z-index: 1;
+}
+		</style>
 	</head>
 	<body>
-		<form id='name_form' action=''>
-			<input id='name_text' autocomplete='off' />
-		</form>
-		<ul id='messages'></ul>
-		<form id='message_form' action=''>
-			<input id='message_text' autocomplete='off' /><button>Send</button>
-		</form>
+		<!-- menu modal begin -->
+		<div class='modal' id='menuModal' role='dialog'>
+			<div class='modal-dialog modal-sm'>
+				<div class='modal-content panel-primary'>
+					<div class='modal-header panel-heading'>
+						<h4 class='text-center'>Simpe socket chat</h4>
+					</div>
+					<div class='modal-body panel-body'>
+						<form role='form' id='menuForm'>
+							<div class='form-group'>
+								<label for='userNameTextInput'>Enter your name:</label>
+								<input type='text' class='form-control' id='userNameTextInput' />
+							</div>
+							<button type='submit' class='btn btn-default'>Join chat</button>
+						</form>
+					</div>
+					<div class='modal-footer panel-footer'>
+						<div class='text-center'>RBLI Hi-Tech, 2015</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- menu modal end -->
+		
+		<!-- online modal begin -->
+		<div class='modal' id='onlineModal' role='dialog'>
+			<div class='modal-dialog modal-sm'>
+				<div class='modal-content panel-primary'>
+					<div class='modal-header panel-heading'>
+						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<h4 class='text-center'>Online users</h4>
+					</div>
+					<div class='modal-body panel-body'>
+						<ul id='onlineUserList'></ul>
+					</div>
+				</div>
+			</div>
+		</div>
+		<!-- online modal end -->
+		
+		<div class='container-fluid'>
+			<div class='panel panel-primary fixedHeaders_panel'>
+				<div class='panel-heading'>
+					<form role='form' id='infoForm' class='form-horizontal'>
+						<div class='row form-group'>
+							<div class='col-sm-2'>
+								<label>You are:</label>
+							</div>
+							<div class='col-sm-3'>
+								<label id='userNameTextLabel'></label>
+							</div>
+							<div class='col-sm-3'>
+							</div>
+							<div class='col-sm-2' style='padding: 0px;'>
+								<button type="button" id='leaveChatButton' class='btn btn-default'>Rename</button>
+							</div>
+							<div class='col-sm-2' style='padding: 0px;'>
+								<button type="button" id='showOnlineUsersButton' class='btn btn-default'>
+									Online users
+									<span class="badge" id='showOnlineUsersCountLabel'></span>
+								</button>
+							</div>
+						</div>
+					</form>
+					<form role='form' id='messageForm' class='form-horizontal'>
+						<div class='row form-group'>
+							<div class='col-sm-2'>
+								<label for='messageTextInput'>Type here:</label>
+							</div>
+							<div class='col-sm-9'>
+								<input type='text' class='form-control' autocomplete='off' id='messageTextInput' />
+							</div>
+							<div class='col-sm-1' style='padding: 0px;'>
+								<button type='submit' class='btn btn-default'>Send</button>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div class='panel-body' id='contentuo'>
+					<ul id='messageList'></ul>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
