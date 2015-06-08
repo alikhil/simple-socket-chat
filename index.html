@@ -49,9 +49,6 @@ $(document).ready(function () {
 			$('#showOnlineUsersButton').click(function () {
 				app.showOnlineView();
 			});
-			$('#leaveChatButton').click(function () {
-				app.showMenuView();
-			});
 			$(window).resize(function () {
 				fixedElements.resizePadding();
 			});
@@ -229,7 +226,7 @@ $(document).ready(function () {
 		<!-- menu modal end -->
 		
 		<!-- online modal begin -->
-		<div class='modal' id='onlineModal' role='dialog' data-backdrop="static" >
+		<div class='modal' id='onlineModal' role='dialog'>
 			<div class='modal-dialog modal-sm'>
 				<div class='modal-content panel-primary'>
 					<div class='modal-header panel-heading'>
@@ -256,10 +253,7 @@ $(document).ready(function () {
 							<div class='col-sm-3'>
 								<label id='userNameTextLabel'></label>
 							</div>
-							<div class='col-sm-2'>
-							</div>
-							<div class='col-sm-2' style='padding: 0px;'>
-								<button type="button" id='leaveChatButton' class='btn btn-default'>Leave chat</button>
+							<div class='col-sm-4'>
 							</div>
 							<div class='col-sm-2' style='padding: 0px;'>
 								<button type="button" id='showOnlineUsersButton' class='btn btn-default'>
