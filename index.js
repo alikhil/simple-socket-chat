@@ -42,7 +42,7 @@ io.on('connection', function(socket){
 		for(var user in userIdNames){
 			onlineList.push({ user : userIdNames[user]});
 		}
-		socket.emit('users.online', onlineList);
+		socket.emit('users.online', { users : onlineList });
 	});
 });
 
