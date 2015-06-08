@@ -36,6 +36,14 @@ io.on('connection', function(socket){
 		userIdNames[uId] = user.user;
 		socket.broadcast.emit('user.types', { user : user.user } );
 	});
+	
+	socket.on('users.getOnline', function() {
+		var onlineList = [];
+		for(var user in userIdNames){
+			onlineList.push({ user : userIdNames[user]});
+		}
+		socket.emit('users.online', onlineList);
+	});
 });
 
 http.listen(port, function(){
