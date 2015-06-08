@@ -52,7 +52,10 @@ $(document).ready(function () {
 			$('#leaveChatButton').click(function () {
 				app.showMenuView();
 			});
-			fixedHeaders.init();
+			$(window).resize(function () {
+				fixedElements.resizePadding();
+			});
+			fixedElements.resizePadding();
 		},
 		bindSocketEvents: function () {
 			socket.on("chat.msg", function(msg) {
@@ -67,10 +70,18 @@ $(document).ready(function () {
 				}
 			});
 			socket.on("user.disconnect", function(msg) {
-				$("#messageList").append($("<li>").text("[" + msg.user + "] left the chat"));
+				$("#messageList").append(
+					$("<li>")
+						.addClass("alert-danger")
+						.text("[" + msg.user + "] left the chat")
+					);
 			});
 			socket.on("user.connect", function(msg) {
-				$("#messageList").append($("<li>").text("[" + msg.user + "] joined the chat"));
+				$("#messageList").append(
+					$("<li>")
+						.addClass("alert-success")
+						.text("[" + msg.user + "] joined the chat")
+					);
 			});
 			socket.on("user.types", function(msg) {
 				var index, currentTime = (new Date()).getTime();
@@ -88,6 +99,7 @@ $(document).ready(function () {
 		},
 		connect: function () {
 			socket = io();
+			socket.connect();
 			app.bindSocketEvents();
 		},
 		disconnect: function () {
@@ -139,66 +151,20 @@ $(document).ready(function () {
 			} else {
 				$('#userTypingNames').text("");
 			}
+			fixedElements.resizePadding();
 		}
 	};
-	var fixedHeaders = {
-		UpdatePanelHeaders: function () {
-			$(".fixedHeaders_panel").each(function() {
-				var el = $(this),
-					offset = el.offset(),
-					scrollTop = $(window).scrollTop(),
-					floatingHeader = $(".panel-heading", this);
-
-				if ((scrollTop > offset.top) && 
-					(scrollTop < offset.top + (el.height() - floatingHeader.outerHeight(false)))) {
-					$(".fixedHeaders_absoluteHeader", this).css("display", "");
-					floatingHeader
-						.css("width", floatingHeader.outerWidth(false))
-						.css("height", floatingHeader.outerHeight(false))
-						.addClass("fixedHeaders_floatingHeader");
-				} else if (scrollTop  > (offset.top + el.height()) &&
-					scrollTop < offset.top + el.height() + floatingHeader.outerHeight(false)) {
-					$(".fixedHeaders_absoluteHeader", this).css("display", "");
-					floatingHeader.addClass("fixedHeaders_floatingHeader");
-					floatingHeader.css({
-						"top": (floatingHeader.outerHeight(true)-el.height()-offset.top+scrollTop)
-					});
-				} else {
-					$(".fixedHeaders_absoluteHeader", this).css("display", "none");
-					floatingHeader
-						.css("width", "")
-						.css("height", "")
-						.removeClass("fixedHeaders_floatingHeader");
-				}
-			});
-		},
-		init: function () {
-			$(".fixedHeaders_panel").each(function() {
-				var floatingHeader = $(".panel-heading", this);
-				floatingHeader.before($("<div>")
-					.addClass("fixedHeaders_absoluteHeader")
-					.css("width", floatingHeader.outerWidth(false))
-					.css("height", floatingHeader.outerHeight(false))
-					)
-			});
-			$(window)
-				.scroll(fixedHeaders.UpdatePanelHeaders)
-				.trigger("scroll");
-		}, 
-		uninit: function () {
-			$(".fixedHeaders_absoluteHeader", this).remove();
+	var fixedElements = {
+		resizePadding: function () {
+			$("#fixedFooter_floating").css("width", $("#fixedFooter_absolute").outerWidth(false));
+			$("#fixedHeader_floating").css("width", $("#fixedHeader_absolute").outerWidth(false));
+			$('#messageList').css('margin-top', $("#fixedHeader_floating").outerHeight(false));
+			$('#messageList').css('margin-bottom', $("#fixedFooter_floating").outerHeight(false));
 		}
 	};
 	app.init();
 });
 		</script>
-		<style>
-.fixedHeaders_floatingHeader {
-	position: fixed;
-	top: 0px;
-	z-index: 1;
-}
-		</style>
 	</head>
 	<body>
 		<!-- menu modal begin -->
@@ -241,9 +207,10 @@ $(document).ready(function () {
 		</div>
 		<!-- online modal end -->
 		
-		<div class='container-fluid'>
-			<div class='panel panel-primary fixedHeaders_panel'>
-				<div class='panel-heading'>
+		<div class='container-fluid fullHeight'>
+			<div class='panel panel-primary fixedHeaders_panel my_panelFullHeight'>
+				<div class='panel-heading' id='fixedHeader_absolute'></div>
+				<div id='fixedHeader_floating' class='panel-heading'>
 					<form role='form' id='infoForm' class='form-horizontal'>
 						<div class='row form-group'>
 							<div class='col-sm-2'>
@@ -252,7 +219,7 @@ $(document).ready(function () {
 							<div class='col-sm-3'>
 								<label id='userNameTextLabel'></label>
 							</div>
-							<div class='col-sm-3'>
+							<div class='col-sm-2'>
 							</div>
 							<div class='col-sm-2' style='padding: 0px;'>
 								<button type="button" id='leaveChatButton' class='btn btn-default'>Leave chat</button>
@@ -265,6 +232,13 @@ $(document).ready(function () {
 							</div>
 						</div>
 					</form>
+				</div>
+				<div class='panel-body'>
+					<ul id='messageList'></ul>
+				</div>
+				<div class='panel-footer my_panelFooterBottom' id='fixedFooter_absolute'></div>
+				<div id='fixedFooter_floating' class='panel-footer'>
+					<div id='userTypingNames'></div>
 					<form role='form' id='messageForm' class='form-horizontal'>
 						<div class='row form-group'>
 							<div class='col-sm-2'>
@@ -278,10 +252,6 @@ $(document).ready(function () {
 							</div>
 						</div>
 					</form>
-					<div id='userTypingNames'></div>
-				</div>
-				<div class='panel-body'>
-					<ul id='messageList'></ul>
 				</div>
 			</div>
 		</div>

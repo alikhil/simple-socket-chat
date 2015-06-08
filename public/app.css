@@ -10,3 +10,42 @@ ul li {
 ul li:nth-child(odd) {
 	background: #eee;
 }
+.li_userConnect {
+}
+.li_userDisconnect {
+	background-color: #000;
+}
+
+html, body, .fullHeight {
+	height: 100%;
+}
+.my_panelFullHeight {
+	position: relative;
+	margin-bottom: 0px;
+	min-height: 100%;
+}
+.my_panelFooterBottom {
+	width: 100%;
+	position: absolute;
+	bottom: 0px;
+}
+#fixedFooter_floating {
+	position: fixed;
+	bottom: 0px;
+	z-index: 1;
+}
+#fixedFooter_absolute {
+	height: 0px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
+#fixedHeader_floating {
+	position: fixed;
+	top: 0px;
+	z-index: 1;
+}
+#fixedHeader_absolute {
+	height: 0px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+}
