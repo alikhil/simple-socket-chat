@@ -23,7 +23,7 @@ io.on('connection', function(socket){
 	
 	socket.on('chat.msg', function(msg){
 		userIdNames[msg.uId] = msg.user;
-		io.emit('chat.msg', { user : msg.user, message : msg.message });
+		socket.broadcast.emit('chat.msg', { user : msg.user, message : msg.message });
     });
 	socket.on('disconnect', function(){
 		io.emit('user.disconnect', { user : userIdNames[uId] });
