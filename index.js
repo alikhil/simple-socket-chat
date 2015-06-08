@@ -22,13 +22,19 @@ io.on('connection', function(socket){
 	});
 	
 	socket.on('chat.msg', function(msg){
-		userIdNames[msg.uId] = msg.user;
+		userIdNames[uId] = msg.user;
 		socket.broadcast.emit('chat.msg', { user : msg.user, message : msg.message });
     });
+	
 	socket.on('disconnect', function(){
 		io.emit('user.disconnect', { user : userIdNames[uId] });
 		if(userIdNames.hasOwnProperty(uId))
 			delete(userIdNames[uId]);
+	});
+	
+	socket.on('user.types', function(user) {
+		userIdNames[uId] = user.user;
+		socket.broadcast.emit('user.types', { user : user.user } );
 	});
 });
 
