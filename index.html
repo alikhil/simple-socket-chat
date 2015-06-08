@@ -12,10 +12,13 @@
 		<script src='/socket.io/socket.io.js'></script>
 		<script>
 $(document).ready(function () {
-	var socket = io();
+	var socket = undefined;
 	var app = {
 		userName: '',
 		defaultUserName: 'Anonymous', 
+		typingUsers: [],
+		updateTypingUsersTimerId: undefined,
+		updateTypingUsersTimerMs: 3000,
 		onlineUserCount: 0,
 		onlineUsers: [],
 		initUI: function () {
@@ -28,8 +31,12 @@ $(document).ready(function () {
 					app.userName = app.defaultUserName;
 				}
 				$('#userNameTextLabel').text(app.userName);
-				socket.emit('user.register', {user: app.userName});
 				app.hideMenuView();
+				socket.emit('user.register', {user: app.userName});
+				return false;
+			});
+			$('#messageTextInput').on('input', function () {
+				socket.emit("user.types", {user: app.userName});
 				return false;
 			});
 			$('#messageForm').submit(function () {
@@ -57,18 +64,47 @@ $(document).ready(function () {
 			socket.on("user.connect", function(msg) {
 				$("#messageList").append($("<li>").text("[" + msg.user + "] joined the chat"));
 			});
+			socket.on("user.types", function(msg) {
+				var index, currentTime = (new Date()).getTime();
+				for(index = 0; index < app.typingUsers.length; index ++) {
+					if(app.typingUsers[index].user == msg.user) {
+						app.typingUsers[index].time = currentTime;
+						break;
+					}
+				}
+				if(index >= app.typingUsers.length) {
+					app.typingUsers.push({user: msg.user, time: currentTime});
+				}
+			});
+		},
+		connect: function () {
+			socket = io();
+			app.bindSocketEvents();
+		},
+		disconnect: function () {
+			if(socket !== undefined) {
+				socket.disconnect();
+			}
 		},
 		init: function () {
 			app.initUI();
-			app.bindSocketEvents();
 		},
 		showMenuView: function () {
 			$('#menuModal').modal('show');
 			$('#userNameTextInput').focus();
+			app.disconnect();
+			if(app.updateTypingUsersTimerId !== undefined) {
+				window.clearInterval(app.updateTypingUsersTimerId);
+				app.updateTypingUsersTimerId = undefined;
+			}
 		},
 		hideMenuView: function () {
 			$('#menuModal').modal('hide');
 			$('#messageTextInput').focus();
+			app.connect();
+			app.updateTypingUsersTimerId = window.setInterval(
+				app.updateTypingUsers, 
+				app.updateTypingUsersTimerMs);
 		},
 		showOnlineView: function () {
 			$('#onlineModal').modal('show');
@@ -76,6 +112,23 @@ $(document).ready(function () {
 		hideOnlineView: function () {
 			$('#onlineModal').modal('hide');
 			$('#messageTextInput').focus();
+		},
+		updateTypingUsers: function () {
+			var currentTime = (new Date()).getTime(), newList = [], nameList = [];
+			for(var index = 0; index < app.typingUsers.length; index ++) {
+				if(currentTime - app.typingUsers[index].time <= app.updateTypingUsersTimerMs) {
+					newList.push(app.typingUsers[index]);
+					nameList.push(app.typingUsers[index].user);
+				}
+			}
+			app.typingUsers.splice(0, app.typingUsers.length);
+			app.typingUsers = newList;
+			if(nameList.length > 0) {
+				$('#userTypingNames').text(nameList.join(',')+" "+(nameList.length > 1? "are" : "is")+" typing");
+				nameList.splice(0, nameList.length);
+			} else {
+				$('#userTypingNames').text("");
+			}
 		}
 	};
 	var fixedHeaders = {
@@ -215,6 +268,7 @@ $(document).ready(function () {
 							</div>
 						</div>
 					</form>
+					<div id='userTypingNames'></div>
 				</div>
 				<div class='panel-body' id='contentuo'>
 					<ul id='messageList'></ul>
