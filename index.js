@@ -8,32 +8,44 @@ var userIdNames = {};
 var userIdRooms = {};
 var maxUsetCount = 5;
 var roomList = { 1 : { id : 1, connected : 0, total : maxUserCount } };
-
+var totalUsers = 0;
+var availableTotalUsers = maxUserCount;
 app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
 });
-
+var roomId = 1;
 function getUserName(sock){
     return sock.id.toString().substr(0, 5);
 }
  app.use(express.static(__dirname + '/public'));
 
+function createRoom(){
+    availableTotalUsers += maxUserCount;
+    roomList[++roomId] = { id : roomId, connected : 0, total : maxUserCount };
+}
+function deleteRoom(room){
+    availableTotalUsers -= maxUserCount;
+    delete (roomList[room]);
+}
 io.on('connection', function(socket){
 
     var uId = getUserName(socket);
     socket.emit('room.list', { rooms : Object.values(roomList) });
-
+    var room = user.roomId;
 	socket.on('room.join', function(user){
         userIdNames[uId] = user.user;
-        if (roomList[user.roomId].connected == total) {
+        if (roomList[room].connected == total) {
             socket.emit('room.join.fail', 'room_overload');
             socket.emit('room.list', { rooms : Object.values(roomList) });
             return false;
         }
-        socket.room = user.roomId;
-        userIdRooms[uId] = user.roomId;
-        this.join(user.roomId);
-		io.sockets.in(user.roomId).emit('romm.connect', { user : user.user });
+        socket.room = room
+        userIdRooms[uId] = room
+        roomList[room].connected++;
+        if (++totalUsers === availableTotalUsers)
+            createRoom();
+        this.join(room);
+		io.sockets.in(room).emit('romm.connect', { user : user.user });
 	});
 	
 	socket.on('room.chat.msg', function(msg){
@@ -44,8 +56,12 @@ io.on('connection', function(socket){
 	socket.on('disconnect', function(){
 		io.sockets.in(sock.room).emit('room.leave', { user : userIdNames[uId] });
         if (userIdNames.hasOwnProperty(uId)) {
+            totalUsers--;
             delete (userIdNames[uId]);
             delete (userIdRooms[uId]);
+            if (--roomList[this.room].connected === 0) {
+                deleteRoom(this.room);
+            }
         }
 	});
 	
