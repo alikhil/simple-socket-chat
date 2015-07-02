@@ -1,0 +1,1 @@
+This is copy of simple-socket-chat with changes. Rooms testing
