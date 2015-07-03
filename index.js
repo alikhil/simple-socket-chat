@@ -9,7 +9,7 @@ var userIdRooms = {};
 var maxUserCount = 5;
 var roomList = {  };
 var totalUsers = 0;
-var availableTotalUsers = maxUserCount;
+var availableTotalUsers = 0;
 app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
 });
