@@ -6,7 +6,7 @@ var port = 3000;
 
 var userIdNames = {};
 var userIdRooms = {};
-var maxUsetCount = 5;
+var maxUserCount = 5;
 var roomList = {  };
 var totalUsers = 0;
 var availableTotalUsers = maxUserCount;
