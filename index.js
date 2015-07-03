@@ -34,7 +34,7 @@ io.on('connection', function(socket){
     socket.on('room.join', function (user){
         var room = user.roomId;
 
-        if (roomList[room].connected == total) {
+        if (roomList[room].connected == totalUsers) {
             socket.emit('room.join.fail', 'room_overload');
             socket.emit('room.list', { rooms : Object.values(roomList) });
             return false;
@@ -54,14 +54,16 @@ io.on('connection', function(socket){
 		socket.broadcast.to(this.room).emit('chat.msg', { user : msg.user, message : msg.message });
     });
 	
-	socket.on('disconnect', function(){
-		io.sockets.in(sock.room).emit('room.leave', { user : userIdNames[uId] });
-        if (userIdNames.hasOwnProperty(uId)) {
-            totalUsers--;
-            delete (userIdNames[uId]);
-            delete (userIdRooms[uId]);
-            if (--roomList[this.room].connected === 0 && availableTotalUsers > maxUserCount) {
-                deleteRoom(this.room);
+    socket.on('disconnect', function (){
+        if (this.hasOwnProperty('room')) {
+            io.sockets.in(this.room).emit('room.leave', { user : userIdNames[uId] });
+            if (userIdNames.hasOwnProperty(uId)) {
+                totalUsers--;
+                delete (userIdNames[uId]);
+                delete (userIdRooms[uId]);
+                if (--roomList[this.room].connected === 0 && availableTotalUsers > maxUserCount) {
+                    deleteRoom(this.room);
+                }
             }
         }
 	});
