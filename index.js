@@ -34,7 +34,7 @@ io.on('connection', function(socket){
     socket.on('room.join', function (user){
         var room = user.roomId;
 
-        if (roomList[room].connected == totalUsers) {
+        if (roomList[room].connected == maxUserCount) {
             socket.emit('room.join.fail', 'room_overload');
             socket.emit('room.list', { rooms : Object.values(roomList) });
             return false;
