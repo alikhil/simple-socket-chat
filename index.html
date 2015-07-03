@@ -12,197 +12,218 @@
 		<script src='/socket.io/socket.io.js'></script>
 		<script>
 $(document).ready(function () {
-	var socket = undefined;
-	var app = {
-		userName: '',
-		defaultUserName: 'Anonymous', 
-		typingUsers: [],
-		updateTypingUsersTimerId: undefined,
-		updateTypingUsersTimerMs: 200,
-		onlineUsers: [],
-		initUI: function () {
-			$('#userNameTextInput').val(app.defaultUserName);
-			//app.updateOnlineUsers();
-			app.showMenuView();
-			$('#menuForm').submit(function () {
-				app.userName = $('#userNameTextInput').val();
-				if(app.userName.length == 0) {
-					app.userName = app.defaultUserName;
-				}
-				$('#userNameTextLabel').text(app.userName);
-				app.hideMenuView();
-				socket.emit('user.register', {user: app.userName});
-				socket.emit("users.getOnline");
-				return false;
-			});
-			$('#messageTextInput').on('input', function () {
-				socket.emit("user.types", {user: app.userName});
-				return false;
-			});
-			$('#messageForm').submit(function () {
-				var message = $('#messageTextInput').val();
-				$('#messageTextInput').val('');
-				$('#messageList').append($('<li>').text('[' + app.userName + '] : ' + message));
-				socket.emit("chat.msg", {message: message, user: app.userName});
-				return false;
-			});
-			$('#showOnlineUsersButton').click(function () {
-				app.showOnlineView();
-			});
-			$(window).resize(function () {
-				fixedElements.resizePadding();
-			});
-			fixedElements.resizePadding();
-		},
-		bindSocketEvents: function () {
-			socket.on("chat.msg", function(msg) {
-				$("#messageList").append($("<li>").text("[" + msg.user + "] : " + msg.message));
-				var index;
-				for(index = 0; index < app.typingUsers.length; index ++) {
-					if(app.typingUsers[index].user == msg.user) {
-						app.typingUsers[index].time += 2*app.updateTypingUsersTimerMs;
-						app.updateTypingUsers();
-						break;
-					}
-				}
-			});
-			socket.on("users.online", function(msg) {
-				var newList = [];
-				for(var index = 0; index < msg.users.length; index ++) {
-					newList.push(msg.users[index].user);
-				}
-				app.onlineUsers.splice(0, app.onlineUsers.length);
-				app.onlineUsers = newList;
-				app.updateOnlineUsers();
-			});
-			socket.on("user.disconnect", function(msg) {
-				for(var index = 0; index < app.onlineUsers.length; index ++) {
-					if(app.onlineUsers[index] == msg.user) {
-						app.onlineUsers.splice(index, 1);
-						break;
-					}
-				}
-				$("#messageList").append(
-					$("<li>")
-						.addClass("alert-danger")
-						.text("[" + msg.user + "] left the chat")
-					);
-				app.updateOnlineUsers();
-			});
-			socket.on("user.connect", function(msg) {
-				var index;
-				for(index = 0; index < app.onlineUsers.length; index ++) {
-					if(app.onlineUsers[index].user == msg.user) {
-						break;
-					}
-				}
-				if(index >= app.onlineUsers.length) {
-					app.onlineUsers.push(msg.user);
-				}
-				$("#messageList").append(
-					$("<li>")
-						.addClass("alert-success")
-						.text("[" + msg.user + "] joined the chat")
-					);
-				app.updateOnlineUsers();
-			});
-			socket.on("user.types", function(msg) {
-				var index, currentTime = (new Date()).getTime();
-				for(index = 0; index < app.typingUsers.length; index ++) {
-					if(app.typingUsers[index].user == msg.user) {
-						app.typingUsers[index].time = currentTime;
-						break;
-					}
-				}
-				if(index >= app.typingUsers.length) {
-					app.typingUsers.push({user: msg.user, time: currentTime});
-					app.updateTypingUsers();
-				}
-			});
-		},
-		connect: function () {
-			socket = io();
-			socket.connect();
-			app.bindSocketEvents();
-		},
-		disconnect: function () {
-			if(socket !== undefined) {
-				socket.disconnect();
-			}
-		},
-		init: function () {
-			app.initUI();
-		},
-		showMenuView: function () {
-			$('#menuModal').modal('show');
-			$('#userNameTextInput').focus();
-			app.disconnect();
-			if(app.updateTypingUsersTimerId !== undefined) {
-				window.clearInterval(app.updateTypingUsersTimerId);
-				app.updateTypingUsersTimerId = undefined;
-			}
-		},
-		hideMenuView: function () {
-			$('#menuModal').modal('hide');
-			$('#messageTextInput').focus();
-			app.connect();
-			app.updateTypingUsersTimerId = window.setInterval(
-				app.updateTypingUsers, 
-				app.updateTypingUsersTimerMs);
-		},
-		showOnlineView: function () {
-			$('#onlineModal').modal('show');
-		},
-		hideOnlineView: function () {
-			$('#onlineModal').modal('hide');
-			$('#messageTextInput').focus();
-		},
-		updateTypingUsers: function () {
-			var currentTime = (new Date()).getTime(), newList = [], nameList = [];
-			for(var index = 0; index < app.typingUsers.length; index ++) {
-				if(currentTime - app.typingUsers[index].time >= 0 &&
-					currentTime - app.typingUsers[index].time <= app.updateTypingUsersTimerMs) {
-					newList.push(app.typingUsers[index]);
-					nameList.push(app.typingUsers[index].user);
-				}
-			}
-			app.typingUsers.splice(0, app.typingUsers.length);
-			app.typingUsers = newList;
-			if(nameList.length > 0) {
-				$('#userTypingNames').text(nameList.join(',')+" "+(nameList.length > 1? "are" : "is")+" typing");
-				nameList.splice(0, nameList.length);
-			} else {
-				$('#userTypingNames').text("");
-			}
-			fixedElements.resizePadding();
-		},
-		updateOnlineUsers: function () {
-			var listElement = $("#onlineUserList");
-			listElement.empty();
-			for(var index = 0; index < app.onlineUsers.length; index ++) {
-				listElement.append(
-					$("<li>")
-						.text(app.onlineUsers[index])
-					);
-			}
-			$('#showOnlineUsersCountLabel').text(app.onlineUsers.length);
-		}
-	};
-	var fixedElements = {
-		resizePadding: function () {
-			$("#fixedFooter_floating").css("width", $("#fixedFooter_absolute").outerWidth(false));
-			$("#fixedHeader_floating").css("width", $("#fixedHeader_absolute").outerWidth(false));
-			$('#messageList').css('margin-top', $("#fixedHeader_floating").outerHeight(false));
-			$('#messageList').css('margin-bottom', $("#fixedFooter_floating").outerHeight(false));
-		}
-	};
 	app.init();
 });
+var socket = undefined;
+var app = {
+	userName: '',
+	defaultUserName: 'Anonymous', 
+	typingUsers: [],
+	updateTypingUsersTimerId: undefined,
+	updateTypingUsersTimerMs: 200,
+	onlineUsers: [],
+	initUI: function () {
+		$('#userNameTextInput').val(app.defaultUserName);
+		//app.updateOnlineUsers();
+		app.showMenuView();
+		$('#menuForm').submit(function () {
+			app.userName = $('#userNameTextInput').val();
+			if(app.userName.length == 0) {
+				app.userName = app.defaultUserName;
+			}
+			$('#userNameTextLabel').text(app.userName);
+			app.hideMenuView();
+			$('#error').hide();
+			socket.emit('room.join', {user: app.userName, roomId: $('#roomSelect').val()});
+			socket.emit('room.users.getOnline');
+			return false;
+		});
+		$('#messageTextInput').on('input', function () {
+			socket.emit('room.user.types', {user: app.userName});
+			return false;
+		});
+		$('#messageForm').submit(function () {
+			var message = $('#messageTextInput').val();
+			$('#messageTextInput').val('');
+			$('#messageList').append($('<li>').text('[' + app.userName + '] : ' + message));
+			socket.emit('room.chat.msg', {message: message, user: app.userName});
+			return false;
+		});
+		$('#showOnlineUsersButton').click(function () {
+			app.showOnlineView();
+		});
+		$(window).resize(function () {
+			fixedElements.resizePadding();
+		});
+		fixedElements.resizePadding();
+		$('#error').hide();
+		$('#errorHide').click (function () {
+			$('#error').hide();
+		});
+	},
+	bindSocketEvents: function () {
+		socket.on('room.join.fail', function(packet) {
+			app.showMenuView ();
+			app.showError(packet);
+		});
+		socket.on('room.list', app.updateRooms);
+		socket.on('chat.msg', function(msg) {
+			$('#messageList').append($('<li>').text('[' + msg.user + '] : ' + msg.message));
+			var index;
+			for(index = 0; index < app.typingUsers.length; index ++) {
+				if(app.typingUsers[index].user == msg.user) {
+					app.typingUsers[index].time += 2*app.updateTypingUsersTimerMs;
+					app.updateTypingUsers();
+					break;
+				}
+			}
+		});
+		socket.on('room.users.online', function(msg) {
+			var newList = [];
+			for(var index = 0; index < msg.users.length; index ++) {
+				newList.push(msg.users[index].user);
+			}
+			app.onlineUsers.splice(0, app.onlineUsers.length);
+			app.onlineUsers = newList;
+			app.updateOnlineUsers();
+		});
+		socket.on('room.leave', function(msg) {
+			for(var index = 0; index < app.onlineUsers.length; index ++) {
+				if(app.onlineUsers[index] == msg.user) {
+					app.onlineUsers.splice(index, 1);
+					break;
+				}
+			}
+			$('#messageList').append(
+				$('<li>')
+					.addClass('alert-danger')
+					.text('[' + msg.user + '] left the chat')
+				);
+			app.updateOnlineUsers();
+		});
+		socket.on('romm.connect', function(msg) {
+			var index;
+			for(index = 0; index < app.onlineUsers.length; index ++) {
+				if(app.onlineUsers[index].user == msg.user) {
+					break;
+				}
+			}
+			if(index >= app.onlineUsers.length) {
+				app.onlineUsers.push(msg.user);
+			}
+			$('#messageList').append(
+				$('<li>')
+					.addClass('alert-success')
+					.text('[' + msg.user + '] joined the chat')
+				);
+			app.updateOnlineUsers();
+		});
+		socket.on('room.user.types', function(msg) {
+			var index, currentTime = (new Date()).getTime();
+			for(index = 0; index < app.typingUsers.length; index ++) {
+				if(app.typingUsers[index].user == msg.user) {
+					app.typingUsers[index].time = currentTime;
+					break;
+				}
+			}
+			if(index >= app.typingUsers.length) {
+				app.typingUsers.push({user: msg.user, time: currentTime});
+				app.updateTypingUsers();
+			}
+		});
+	},
+	showError: function (text) {
+		$('#errorText').text(text);
+		$('#error').show();
+	},
+	connect: function () {
+		socket = io();
+		app.bindSocketEvents();
+	},
+	init: function () {
+		app.connect();
+		app.initUI();
+	},
+	showMenuView: function () {
+		$('#menuModal').modal('show');
+		$('#userNameTextInput').focus();
+		if(app.updateTypingUsersTimerId !== undefined) {
+			window.clearInterval(app.updateTypingUsersTimerId);
+			app.updateTypingUsersTimerId = undefined;
+		}
+	},
+	hideMenuView: function () {
+		$('#menuModal').modal('hide');
+		$('#messageTextInput').focus();
+		app.updateTypingUsersTimerId = window.setInterval(
+			app.updateTypingUsers, 
+			app.updateTypingUsersTimerMs);
+	},
+	showOnlineView: function () {
+		$('#onlineModal').modal('show');
+	},
+	hideOnlineView: function () {
+		$('#onlineModal').modal('hide');
+		$('#messageTextInput').focus();
+	},
+	updateTypingUsers: function () {
+		var currentTime = (new Date()).getTime(), newList = [], nameList = [];
+		for(var index = 0; index < app.typingUsers.length; index ++) {
+			if(currentTime - app.typingUsers[index].time >= 0 &&
+				currentTime - app.typingUsers[index].time <= app.updateTypingUsersTimerMs) {
+				newList.push(app.typingUsers[index]);
+				nameList.push(app.typingUsers[index].user);
+			}
+		}
+		app.typingUsers.splice(0, app.typingUsers.length);
+		app.typingUsers = newList;
+		if(nameList.length > 0) {
+			$('#userTypingNames').text(nameList.join(',')+' '+(nameList.length > 1? 'are' : 'is')+' typing');
+			nameList.splice(0, nameList.length);
+		} else {
+			$('#userTypingNames').text('');
+		}
+		fixedElements.resizePadding();
+	},
+	updateOnlineUsers: function () {
+		var listElement = $('#onlineUserList');
+		listElement.empty();
+		for(var index = 0; index < app.onlineUsers.length; index ++) {
+			listElement.append(
+				$('<li>')
+					.text(app.onlineUsers[index])
+				);
+		}
+		$('#showOnlineUsersCountLabel').text(app.onlineUsers.length);
+	},
+	updateRooms: function (packet) {
+		var select = $('#roomSelect'),
+			rooms = packet.rooms;
+		select.empty();
+		for(var i = 0; i < rooms.length; i ++) {
+			select.append (
+				'<option value=' +rooms[i].id + '>#' +
+				rooms[i].id+' - ' +
+				rooms[i].connected + '/' +
+				rooms[i].total +
+				'</option>'
+			);
+		}
+	}
+};
+var fixedElements = {
+	resizePadding: function () {
+		$('#fixedFooter_floating').css('width', $('#fixedFooter_absolute').outerWidth(false));
+		$('#fixedHeader_floating').css('width', $('#fixedHeader_absolute').outerWidth(false));
+		$('#messageList').css('margin-top', $('#fixedHeader_floating').outerHeight(false));
+		$('#messageList').css('margin-bottom', $('#fixedFooter_floating').outerHeight(false));
+	}
+};
 		</script>
 	</head>
 	<body>
 		<!-- menu modal begin -->
-		<div class='modal' id='menuModal' role='dialog' data-backdrop="static" >
+		<div class='modal' id='menuModal' role='dialog' data-backdrop='static' >
 			<div class='modal-dialog modal-sm'>
 				<div class='modal-content panel-primary'>
 					<div class='modal-header panel-heading'>
@@ -210,9 +231,17 @@ $(document).ready(function () {
 					</div>
 					<div class='modal-body panel-body'>
 						<form role='form' id='menuForm'>
+							<div class='alert alert-danger' id='error'>
+							<span id='errorText'></span>
+							<a href='#' class='close' id='errorHide'>&times;</a>
+							</div>
 							<div class='form-group'>
 								<label for='userNameTextInput'>Enter your name:</label>
 								<input type='text' class='form-control' id='userNameTextInput' />
+							</div>
+							<div class='form-group'>
+								<label for='roomSelect'>Select room</label>
+								<select class='form-control' id='roomSelect'></select>
 							</div>
 							<button type='submit' class='btn btn-default'>Join chat</button>
 						</form>
@@ -230,7 +259,7 @@ $(document).ready(function () {
 			<div class='modal-dialog modal-sm'>
 				<div class='modal-content panel-primary'>
 					<div class='modal-header panel-heading'>
-						<button type="button" class="close" data-dismiss="modal">&times;</button>
+						<button type='button' class='close' data-dismiss='modal'>&times;</button>
 						<h4 class='text-center'>Online users</h4>
 					</div>
 					<div class='modal-body panel-body'>
@@ -247,18 +276,18 @@ $(document).ready(function () {
 				<div id='fixedHeader_floating' class='panel-heading'>
 					<form role='form' id='infoForm' class='form-horizontal'>
 						<div class='row form-group'>
-							<div class='col-sm-2'>
+							<div class='col-xs-2'>
 								<label>You are:</label>
 							</div>
-							<div class='col-sm-3'>
+							<div class='col-xs-3'>
 								<label id='userNameTextLabel'></label>
 							</div>
-							<div class='col-sm-4'>
+							<div class='col-xs-4'>
 							</div>
-							<div class='col-sm-2' style='padding: 0px;'>
-								<button type="button" id='showOnlineUsersButton' class='btn btn-default'>
+							<div class='col-xs-2' style='padding: 0px;'>
+								<button type='button' id='showOnlineUsersButton' class='btn btn-default'>
 									Online users
-									<span class="badge" id='showOnlineUsersCountLabel'></span>
+									<span class='badge' id='showOnlineUsersCountLabel'></span>
 								</button>
 							</div>
 						</div>
@@ -272,13 +301,13 @@ $(document).ready(function () {
 					<div id='userTypingNames'></div>
 					<form role='form' id='messageForm' class='form-horizontal'>
 						<div class='row form-group'>
-							<div class='col-sm-2'>
+							<div class='col-xs-2'>
 								<label for='messageTextInput'>Type here:</label>
 							</div>
-							<div class='col-sm-9'>
+							<div class='col-xs-9'>
 								<input type='text' class='form-control' autocomplete='off' id='messageTextInput' />
 							</div>
-							<div class='col-sm-1' style='padding: 0px;'>
+							<div class='col-xs-1' style='padding: 0px;'>
 								<button type='submit' class='btn btn-default'>Send</button>
 							</div>
 						</div>
