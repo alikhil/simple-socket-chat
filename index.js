@@ -7,18 +7,18 @@ var port = 3000;
 var userIdNames = {};
 var userIdRooms = {};
 var maxUsetCount = 5;
-var roomList = { 1 : { id : 1, connected : 0, total : maxUserCount } };
+var roomList = {  };
 var totalUsers = 0;
 var availableTotalUsers = maxUserCount;
 app.get('/', function(req, res){
 	res.sendFile(__dirname + '/index.html');
 });
-var roomId = 1;
+var roomId = 0;
 function getUserName(sock){
     return sock.id.toString().substr(0, 5);
 }
  app.use(express.static(__dirname + '/public'));
-
+createRoom();
 function createRoom(){
     availableTotalUsers += maxUserCount;
     roomList[++roomId] = { id : roomId, connected : 0, total : maxUserCount };
@@ -31,14 +31,15 @@ io.on('connection', function(socket){
 
     var uId = getUserName(socket);
     socket.emit('room.list', { rooms : Object.values(roomList) });
-    var room = user.roomId;
-	socket.on('room.join', function(user){
-        userIdNames[uId] = user.user;
+    socket.on('room.join', function (user){
+        var room = user.roomId;
+
         if (roomList[room].connected == total) {
             socket.emit('room.join.fail', 'room_overload');
             socket.emit('room.list', { rooms : Object.values(roomList) });
             return false;
         }
+        userIdNames[uId] = user.user;
         socket.room = room
         userIdRooms[uId] = room
         roomList[room].connected++;
