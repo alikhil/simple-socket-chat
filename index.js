@@ -60,7 +60,7 @@ io.on('connection', function(socket){
             totalUsers--;
             delete (userIdNames[uId]);
             delete (userIdRooms[uId]);
-            if (--roomList[this.room].connected === 0) {
+            if (--roomList[this.room].connected === 0 && availableTotalUsers > maxUserCount) {
                 deleteRoom(this.room);
             }
         }
