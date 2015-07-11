@@ -2,6 +2,10 @@ var app = require('express')();
 var express = require("express");
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var debugLive = require('debug-live');
+debugLive(function(exprToEval){
+	return eval(exprToEval);
+	}, 1337);
 var port = 3000;
 
 var userIdNames = {};
