@@ -7,7 +7,45 @@ debugLive(function(exprToEval){
 	return eval(exprToEval);
 	}, 1337);
 var port = 3000;
+var loggers = require('intel');
 
+loggers.config({
+    formatters: {
+        'simple': {
+            'format': '[%(levelname)s] %(message)s',
+            'colorize': true
+        },
+        'details': {
+            'format': '[%(date)s] %(levelname)s: %(message)s',
+            'strip': true
+        }
+    },
+    handlers: {
+        'terminal': {
+            'class': loggers.handlers.Console,
+            'formatter': 'simple',
+            'level': loggers.VERBOSE
+        },
+        'logfile': {
+            'class': loggers.handlers.File,
+            'level': loggers.DEBUG,
+            'file': 'server.log',
+            'formatter': 'details'
+        }
+    },
+    loggers: {
+        'logger': {
+            'handlers': ['terminal','logfile'],
+            'level': 'DEBUG',
+            'handleExceptions': true,
+            'exitOnError': false,
+            'propagate': false
+        }
+    }
+});
+
+var logger = loggers.getLogger('logger');
+logger.info('тянг1337Eng');
 var userIdNames = {};
 var userIdRooms = {};
 var maxUserCount = 5;
